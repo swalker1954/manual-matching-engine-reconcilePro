@@ -172,6 +172,8 @@ def main():
     ap.add_argument("--period", required=True, help="e.g. 2025-12")
     ap.add_argument("--max-items", type=int, default=10)
     ap.add_argument("--date-window", type=int, default=15)
+    ap.add_argument("--cap-entries", type=int, default=2_000_000,
+                     help="DP entry budget per target search before giving up")
     args = ap.parse_args()
 
     wb = openpyxl.load_workbook(args.input, data_only=False)
@@ -184,7 +186,7 @@ def main():
     print(f"Loaded {len(gl_items)} GL rows, {len(bank_items)} Bank rows")
 
     results = match_all(gl_items, bank_items, max_items=args.max_items,
-                         date_window_days=args.date_window)
+                         date_window_days=args.date_window, cap_entries=args.cap_entries)
 
     matched_bank_rows = sorted(
         (b["row"] for b in bank_items if results[b["id"]].group_ids),
