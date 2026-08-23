@@ -118,7 +118,7 @@ def build_report_tabs(wb, gl_items, bank_items, results: dict, group_codes: dict
         if r.group_ids:
             gl_rows = [gl_by_id[gid]["row"] for gid in r.group_ids]
             gl_amounts = [gl_by_id[gid]["amount_cents"] / 100 for gid in r.group_ids]
-            matched_sum = sum(gl_amounts)
+            matched_sum = round(sum(gl_amounts), 2)
             diff = round(matched_sum - target_dollars, 2)
             count = len(gl_rows)
             code = group_codes.get(b["row"], "")
