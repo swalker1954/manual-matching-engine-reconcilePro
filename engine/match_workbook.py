@@ -64,16 +64,20 @@ def load_side(ws, amount_col: str, date_col: str, id_prefix: str):
 
 
 def write_back(ws, idx, id_col: str, engine_col: str, engine_tag: str,
-                assignments: dict, status_col: str = None, status_value: str = None):
+                assignments: dict, status_col: str = None, status_value: str = None,
+                secondary_id_col: str = None):
     """assignments: {row_num: group_code}"""
     id_col_idx = idx[id_col] + 1  # openpyxl is 1-indexed
     engine_col_idx = idx[engine_col] + 1
     status_col_idx = idx[status_col] + 1 if status_col else None
+    secondary_id_col_idx = idx[secondary_id_col] + 1 if secondary_id_col else None
     for row_num, code in assignments.items():
         ws.cell(row=row_num, column=id_col_idx, value=code)
         ws.cell(row=row_num, column=engine_col_idx, value=engine_tag)
         if status_col_idx:
             ws.cell(row=row_num, column=status_col_idx, value=status_value)
+        if secondary_id_col_idx:
+            ws.cell(row=row_num, column=secondary_id_col_idx, value=code)
 
 
 def format_components(amounts: list) -> str:
@@ -163,13 +167,21 @@ def main():
     ap.add_argument("--bank-sheet", default="Bank")
     ap.add_argument("--amount-col", default="Matching Amount")
     ap.add_argument("--date-col", default="Transaction Date")
-    ap.add_argument("--id-col", default="Match ID or Group ID")
+    ap.add_argument("--id-col", default="Matching ID",
+                     help="Primary column the match code is written into on both tabs")
+    ap.add_argument("--secondary-id-col", default=None,
+                     help="Optional second column to also receive the match code, "
+                          "e.g. 'Matching/Group ID' on exports that carry both")
     ap.add_argument("--engine-col", default="Matched By Engine")
     ap.add_argument("--engine-tag", default="Manual")
     ap.add_argument("--status-col", default=None, help="e.g. 'Match Status'")
     ap.add_argument("--status-value", default="Matched")
     ap.add_argument("--prefix", required=True, help="e.g. SAP")
     ap.add_argument("--period", required=True, help="e.g. 2025-12")
+    ap.add_argument("--seq-digits", type=int, default=2,
+                     help="Zero-padding width for the sequence number, e.g. 2 -> "
+                          "SAP-2025-12-01. Bump this if a run exceeds 99 matches, "
+                          "or padding breaks sort order past that count.")
     ap.add_argument("--max-items", type=int, default=10)
     ap.add_argument("--date-window", type=int, default=15)
     ap.add_argument("--cap-entries", type=int, default=2_000_000,
@@ -192,7 +204,7 @@ def main():
         (b["row"] for b in bank_items if results[b["id"]].group_ids),
     )
     group_codes = {
-        row: f"{args.prefix}-{args.period}-{seq:03d}"
+        row: f"{args.prefix}-{args.period}-{seq:0{args.seq_digits}d}"
         for seq, row in enumerate(matched_bank_rows, start=1)
     }
 
@@ -209,9 +221,9 @@ def main():
             gl_assignments[gl_by_id[gid]["row"]] = code
 
     write_back(gl_ws, gl_idx, args.id_col, args.engine_col, args.engine_tag, gl_assignments,
-               args.status_col, args.status_value)
+               args.status_col, args.status_value, args.secondary_id_col)
     write_back(bank_ws, bank_idx, args.id_col, args.engine_col, args.engine_tag, bank_assignments,
-               args.status_col, args.status_value)
+               args.status_col, args.status_value, args.secondary_id_col)
 
     build_report_tabs(wb, gl_items, bank_items, results, group_codes)
 
