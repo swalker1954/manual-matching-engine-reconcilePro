@@ -64,13 +64,16 @@ def load_side(ws, amount_col: str, date_col: str, id_prefix: str):
 
 
 def write_back(ws, idx, id_col: str, engine_col: str, engine_tag: str,
-                assignments: dict):
+                assignments: dict, status_col: str = None, status_value: str = None):
     """assignments: {row_num: group_code}"""
     id_col_idx = idx[id_col] + 1  # openpyxl is 1-indexed
     engine_col_idx = idx[engine_col] + 1
+    status_col_idx = idx[status_col] + 1 if status_col else None
     for row_num, code in assignments.items():
         ws.cell(row=row_num, column=id_col_idx, value=code)
         ws.cell(row=row_num, column=engine_col_idx, value=engine_tag)
+        if status_col_idx:
+            ws.cell(row=row_num, column=status_col_idx, value=status_value)
 
 
 def format_components(amounts: list) -> str:
@@ -163,6 +166,8 @@ def main():
     ap.add_argument("--id-col", default="Match ID or Group ID")
     ap.add_argument("--engine-col", default="Matched By Engine")
     ap.add_argument("--engine-tag", default="Manual")
+    ap.add_argument("--status-col", default=None, help="e.g. 'Match Status'")
+    ap.add_argument("--status-value", default="Matched")
     ap.add_argument("--prefix", required=True, help="e.g. SAP")
     ap.add_argument("--period", required=True, help="e.g. 2025-12")
     ap.add_argument("--max-items", type=int, default=10)
@@ -201,8 +206,10 @@ def main():
         for gid in r.group_ids:
             gl_assignments[gl_by_id[gid]["row"]] = code
 
-    write_back(gl_ws, gl_idx, args.id_col, args.engine_col, args.engine_tag, gl_assignments)
-    write_back(bank_ws, bank_idx, args.id_col, args.engine_col, args.engine_tag, bank_assignments)
+    write_back(gl_ws, gl_idx, args.id_col, args.engine_col, args.engine_tag, gl_assignments,
+               args.status_col, args.status_value)
+    write_back(bank_ws, bank_idx, args.id_col, args.engine_col, args.engine_tag, bank_assignments,
+               args.status_col, args.status_value)
 
     build_report_tabs(wb, gl_items, bank_items, results, group_codes)
 
