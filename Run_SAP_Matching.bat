@@ -9,7 +9,7 @@ rem  The DATA lives elsewhere, organized by period:
 rem
 rem    ReconcilePro\Operating_files\Periods\<period>\
 rem      raw\Manual Matching\<raw export>.xlsx   <- input
-rem      output\                                  <- results land here
+rem      raw\Manual Matching\output\              <- results land here
 rem                                                   (auto-created; safe
 rem                                                    to delete to reset)
 rem ============================================================
@@ -32,7 +32,7 @@ if "%PERIOD%"=="" (
 
 set "PERIOD_DIR=%DATA_ROOT%\%PERIOD%"
 set "RAW_DIR=%PERIOD_DIR%\raw\Manual Matching"
-set "OUTPUT_DIR=%PERIOD_DIR%\output"
+set "OUTPUT_DIR=%RAW_DIR%\output"
 
 if not exist "%PERIOD_DIR%" (
     echo Period folder not found:

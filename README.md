@@ -49,11 +49,10 @@ a fixed external location (currently
 -- edit `DATA_ROOT` near the top of the `.bat` if this ever moves):
 
 ```
-Periods\<period>\
-  raw\Manual Matching\<raw export>.xlsx   <- input: exactly one .xlsx here
-  output\                                  <- results land here
-                                              (auto-created; safe to
-                                               delete to reset)
+Periods\<period>\raw\Manual Matching\
+  <raw export>.xlsx   <- input: exactly one .xlsx here
+  output\              <- results land here (auto-created; safe to
+                          delete to reset)
 ```
 
 1. Put exactly one raw export `.xlsx` in that period's `raw\Manual
@@ -62,8 +61,8 @@ Periods\<period>\
 3. It prompts for the period (e.g. type `2025-12` and press Enter) --
    deliberate, not auto-picked, so an old unprocessed period folder can
    never get silently skipped or the wrong month run by accident.
-4. Results land in that period's `output\` as `matched.xlsx` and
-   `matched_analysis.xlsx`.
+4. Results land in that period's `raw\Manual Matching\output\` as
+   `matched.xlsx` and `matched_analysis.xlsx`.
 
 It auto-detects the processing period *label used in match codes* from
 the data itself (no need to edit the file each month for that part) and
