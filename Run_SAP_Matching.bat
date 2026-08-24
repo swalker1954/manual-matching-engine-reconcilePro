@@ -4,45 +4,79 @@ setlocal enabledelayedexpansion
 rem ============================================================
 rem  SAP GL/Bank Matching - double-click launcher
 rem
-rem  Layout expected (this .bat file lives at the top level):
-rem    Manual Matching\
-rem      Run_SAP_Matching.bat   <- this file
-rem      engine\                <- the Python scripts
-rem      <raw export>.xlsx      <- put exactly one raw export here
-rem      output\                <- results land here (auto-created;
-rem                                 safe to delete anytime to reset)
+rem  The engine code (this .bat, engine\) lives on the Desktop.
+rem  The DATA lives elsewhere, organized by period:
+rem
+rem    ReconcilePro\Operating_files\Periods\<period>\
+rem      raw\Manual Matching\<raw export>.xlsx   <- input
+rem      output\                                  <- results land here
+rem                                                   (auto-created; safe
+rem                                                    to delete to reset)
 rem ============================================================
 
-set "BASE=%~dp0"
-set "ENGINE_DIR=%BASE%engine"
-set "OUTPUT_DIR=%BASE%output"
+set "ENGINE_DIR=%~dp0engine"
+set "DATA_ROOT=C:\users\swalk\documents\ReconcilePro\Operating_files\Periods"
 
+echo ============================================================
+echo  SAP GL/Bank Matching
+echo ============================================================
+echo.
+set /p PERIOD=Enter the period folder to run (e.g. 2025-12):
+
+if "%PERIOD%"=="" (
+    echo No period entered - stopping.
+    echo.
+    pause
+    exit /b 1
+)
+
+set "PERIOD_DIR=%DATA_ROOT%\%PERIOD%"
+set "RAW_DIR=%PERIOD_DIR%\raw\Manual Matching"
+set "OUTPUT_DIR=%PERIOD_DIR%\output"
+
+if not exist "%PERIOD_DIR%" (
+    echo Period folder not found:
+    echo   %PERIOD_DIR%
+    echo Check the spelling ^(e.g. 2025-12^) and try again.
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%RAW_DIR%" (
+    echo Raw data folder not found:
+    echo   %RAW_DIR%
+    echo.
+    pause
+    exit /b 1
+)
+
+echo.
 echo Looking for a raw export .xlsx directly in:
-echo   %BASE%
+echo   %RAW_DIR%
 echo.
 
 set "INPUT_FILE="
 set "COUNT=0"
-for %%F in ("%BASE%*.xlsx") do (
+for %%F in ("%RAW_DIR%\*.xlsx") do (
     set "INPUT_FILE=%%F"
     set /a COUNT+=1
 )
 
 if "%COUNT%"=="0" (
-    echo No .xlsx file found in %BASE%
-    echo Place the raw SAP export directly in this folder, next to this
-    echo .bat file, then double-click it again.
+    echo No .xlsx file found in %RAW_DIR%
+    echo Place the raw SAP export there, then try again.
     echo.
     pause
     exit /b 1
 )
 
 if not "%COUNT%"=="1" (
-    echo Found more than one .xlsx file directly in %BASE% - not sure which
+    echo Found more than one .xlsx file in %RAW_DIR% - not sure which
     echo one is the raw export:
-    for %%F in ("%BASE%*.xlsx") do echo   %%F
+    for %%F in ("%RAW_DIR%\*.xlsx") do echo   %%F
     echo.
-    echo Please keep only ONE raw export .xlsx directly in this folder
+    echo Please keep only ONE raw export .xlsx in that folder
     echo ^(move old/output files elsewhere^), then try again.
     echo.
     pause

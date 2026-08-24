@@ -42,21 +42,34 @@ place to let the pipeline write its results.
 ## Double-click launcher (non-command-line use)
 
 `Run_SAP_Matching.bat` (project root) is meant to be run via a Desktop
-shortcut, no command line needed:
+shortcut, no command line needed. The engine code stays wherever this
+project folder lives; the DATA lives separately, organized by period, at
+a fixed external location (currently
+`C:\users\swalk\documents\ReconcilePro\Operating_files\Periods\<period>\`
+-- edit `DATA_ROOT` near the top of the `.bat` if this ever moves):
 
-1. Put exactly one raw export `.xlsx` directly in the project's top-level
-   folder (next to `Run_SAP_Matching.bat`, not inside `workspace/` or
-   `engine/`).
+```
+Periods\<period>\
+  raw\Manual Matching\<raw export>.xlsx   <- input: exactly one .xlsx here
+  output\                                  <- results land here
+                                              (auto-created; safe to
+                                               delete to reset)
+```
+
+1. Put exactly one raw export `.xlsx` in that period's `raw\Manual
+   Matching\` folder.
 2. Double-click the shortcut (or the `.bat` itself).
-3. Results land in `output/` (auto-created next to it) as `matched.xlsx`
-   and `matched_analysis.xlsx`. `output/` is disposable -- delete it and
-   re-run to reset and start clean.
+3. It prompts for the period (e.g. type `2025-12` and press Enter) --
+   deliberate, not auto-picked, so an old unprocessed period folder can
+   never get silently skipped or the wrong month run by accident.
+4. Results land in that period's `output\` as `matched.xlsx` and
+   `matched_analysis.xlsx`.
 
-It auto-detects the processing period from the data itself (no need to
-edit the file each month) and auto-finds the one `.xlsx` sitting in the
-project folder -- if it finds none or more than one, it stops with a
-clear message rather than guessing. Uses the same validated SAP defaults
-as `run_sap.ps1`/`run_sap.sh`.
+It auto-detects the processing period *label used in match codes* from
+the data itself (no need to edit the file each month for that part) and
+auto-finds the one `.xlsx` sitting in the raw folder -- if it finds none
+or more than one, it stops with a clear message rather than guessing.
+Uses the same validated SAP defaults as `run_sap.ps1`/`run_sap.sh`.
 
 A `.bat` file downloaded from the internet may be Windows-blocked the
 same way `.ps1` files are -- if double-clicking it does nothing or shows
