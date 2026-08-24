@@ -82,7 +82,10 @@ def build(input_path, output_path, bank_sheet, currency, source_label):
         f"{t.title()} {'net outflow' if v < 0 else 'net inflow'} of {fmt_money(abs(v))}"
         for t, v in lead_types
     )
-    date_span = f"{dates[0].strftime('%b %-d, %Y')} - {dates[-1].strftime('%b %-d, %Y')}" if dates else ""
+    def fmt_date(d):
+        return f"{d.strftime('%b')} {d.day}, {d.year}"
+
+    date_span = f"{fmt_date(dates[0])} - {fmt_date(dates[-1])}" if dates else ""
     story = (
         f"This population covers {n_txn} Bank transactions ({date_span}) with a "
         f"{fmt_money(abs(net_total))} net {'outflow' if net_total < 0 else 'inflow'}: "
