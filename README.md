@@ -62,7 +62,9 @@ Periods\<period>\raw\Manual Matching\
    deliberate, not auto-picked, so an old unprocessed period folder can
    never get silently skipped or the wrong month run by accident.
 4. Results land in that period's `raw\Manual Matching\output\` as
-   `matched.xlsx` and `matched_analysis.xlsx`.
+   `matched.xlsx` and `matched_analysis.xlsx`, and `matched_analysis.xlsx`
+   opens automatically in Excel (or whatever `.xlsx` is associated with)
+   when the run finishes.
 
 It auto-detects the processing period *label used in match codes* from
 the data itself (no need to edit the file each month for that part) and

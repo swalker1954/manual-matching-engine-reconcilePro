@@ -130,8 +130,11 @@ if errorlevel 1 (
 
 echo.
 echo ============================================================
-echo  Done. Results are in:
+echo  Done. Opening in Excel:
 echo    %OUTPUT_DIR%\matched_analysis.xlsx
 echo ============================================================
 echo.
+
+start "" "%OUTPUT_DIR%\matched_analysis.xlsx"
+
 pause
