@@ -177,7 +177,11 @@ def main():
     ap.add_argument("--status-col", default=None, help="e.g. 'Match Status'")
     ap.add_argument("--status-value", default="Matched")
     ap.add_argument("--prefix", required=True, help="e.g. SAP")
-    ap.add_argument("--period", required=True, help="e.g. 2025-12")
+    ap.add_argument("--period", default=None,
+                     help="e.g. 2025-12. If omitted, auto-detected from the "
+                          "'Processing Period' column in the GL sheet.")
+    ap.add_argument("--period-col", default="Processing Period",
+                     help="Column to auto-detect --period from when it's omitted")
     ap.add_argument("--seq-digits", type=int, default=2,
                      help="Zero-padding width for the sequence number, e.g. 2 -> "
                           "SAP-2025-12-01. Bump this if a run exceeds 99 matches, "
@@ -195,6 +199,25 @@ def main():
     gl_items, gl_idx = load_side(gl_ws, args.amount_col, args.date_col, "GL")
     bank_items, bank_idx = load_side(bank_ws, args.amount_col, args.date_col, "BK")
 
+    period = args.period
+    if period is None:
+        if args.period_col not in gl_idx:
+            raise SystemExit(
+                f"--period not given and column '{args.period_col}' not found on "
+                f"sheet '{args.gl_sheet}' to auto-detect it from. Pass --period explicitly."
+            )
+        pcol = gl_idx[args.period_col]
+        for row in gl_ws.iter_rows(min_row=2, max_row=gl_ws.max_row, values_only=True):
+            if row[pcol] is not None:
+                period = str(row[pcol])
+                break
+        if period is None:
+            raise SystemExit(
+                f"--period not given and column '{args.period_col}' had no values "
+                f"to auto-detect it from. Pass --period explicitly."
+            )
+        print(f"Auto-detected period: {period}")
+
     print(f"Loaded {len(gl_items)} GL rows, {len(bank_items)} Bank rows")
 
     results = match_all(gl_items, bank_items, max_items=args.max_items,
@@ -204,7 +227,7 @@ def main():
         (b["row"] for b in bank_items if results[b["id"]].group_ids),
     )
     group_codes = {
-        row: f"{args.prefix}-{args.period}-{seq:0{args.seq_digits}d}"
+        row: f"{args.prefix}-{period}-{seq:0{args.seq_digits}d}"
         for seq, row in enumerate(matched_bank_rows, start=1)
     }
 
