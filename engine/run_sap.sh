@@ -38,6 +38,7 @@ echo "=== Step 1/2: matching engine ==="
 python3 "$SCRIPT_DIR/match_workbook.py" \
   --input "$INPUT" \
   --output "$MATCHED" \
+  --gl-filter-col "Source" --gl-filter-value "SAP" \
   --id-col "Matching ID" \
   --secondary-id-col "Matching/Group ID" \
   --engine-col "Matched By Engine" \

@@ -41,17 +41,25 @@ def _as_date(value) -> date:
     raise ValueError(f"Unrecognized date value: {value!r}")
 
 
-def load_side(ws, amount_col: str, date_col: str, id_prefix: str):
+def load_side(ws, amount_col: str, date_col: str, id_prefix: str,
+              filter_col: str = None, filter_value: str = None):
     headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     idx = {h: i for i, h in enumerate(headers)}
     if amount_col not in idx:
         raise SystemExit(f"Column '{amount_col}' not found on sheet '{ws.title}'")
+    if filter_col is not None and filter_col not in idx:
+        raise SystemExit(f"Column '{filter_col}' not found on sheet '{ws.title}'")
+    fcol = idx[filter_col] if filter_col is not None else None
     items = []
+    skipped_by_filter = 0
     for row_num, row in enumerate(
         ws.iter_rows(min_row=2, max_row=ws.max_row, values_only=True), start=2
     ):
         amt = row[idx[amount_col]]
         if amt is None:
+            continue
+        if fcol is not None and row[fcol] != filter_value:
+            skipped_by_filter += 1
             continue
         dt = row[idx[date_col]]
         items.append({
@@ -60,6 +68,9 @@ def load_side(ws, amount_col: str, date_col: str, id_prefix: str):
             "amount_cents": to_cents(amt),
             "date": _as_date(dt),
         })
+    if fcol is not None:
+        print(f"  {ws.title}: kept {len(items)} rows with {filter_col}='{filter_value}', "
+              f"skipped {skipped_by_filter} others")
     return items, idx
 
 
@@ -167,6 +178,12 @@ def main():
     ap.add_argument("--bank-sheet", default="Bank")
     ap.add_argument("--amount-col", default="Matching Amount")
     ap.add_argument("--date-col", default="Transaction Date")
+    ap.add_argument("--gl-filter-col", default=None,
+                     help="Optional column to filter GL rows by, e.g. 'Source' -- "
+                          "raw exports can mix multiple source systems (SAP, "
+                          "Oracle, etc.) in one sheet")
+    ap.add_argument("--gl-filter-value", default=None,
+                     help="Value --gl-filter-col must equal to be kept, e.g. 'SAP'")
     ap.add_argument("--id-col", default="Matching ID",
                      help="Primary column the match code is written into on both tabs")
     ap.add_argument("--secondary-id-col", default=None,
@@ -196,7 +213,8 @@ def main():
     gl_ws = wb[args.gl_sheet]
     bank_ws = wb[args.bank_sheet]
 
-    gl_items, gl_idx = load_side(gl_ws, args.amount_col, args.date_col, "GL")
+    gl_items, gl_idx = load_side(gl_ws, args.amount_col, args.date_col, "GL",
+                                  args.gl_filter_col, args.gl_filter_value)
     bank_items, bank_idx = load_side(bank_ws, args.amount_col, args.date_col, "BK")
 
     period = args.period

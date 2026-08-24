@@ -41,6 +41,7 @@ Write-Host "=== Step 1/2: matching engine ===" -ForegroundColor Cyan
 python "$ScriptDir\match_workbook.py" `
   --input "$InputFile" `
   --output "$Matched" `
+  --gl-filter-col "Source" --gl-filter-value "SAP" `
   --id-col "Matching ID" `
   --secondary-id-col "Matching/Group ID" `
   --engine-col "Matched By Engine" `

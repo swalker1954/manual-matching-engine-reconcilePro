@@ -95,6 +95,7 @@ echo.
 python "%ENGINE_DIR%\match_workbook.py" ^
   --input "%INPUT_FILE%" ^
   --output "%OUTPUT_DIR%\matched.xlsx" ^
+  --gl-filter-col "Source" --gl-filter-value "SAP" ^
   --id-col "Matching ID" ^
   --secondary-id-col "Matching/Group ID" ^
   --engine-col "Matched By Engine" ^

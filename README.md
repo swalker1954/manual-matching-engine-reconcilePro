@@ -32,6 +32,21 @@ shortcut -- at real data volume (hundreds of GL lines), proving no exact
 combination exists is combinatorially expensive without it, and it
 doubles as a plausibility filter against coincidental amount matches.
 
+## Raw exports can mix multiple source systems
+
+A raw GL export dropped by the upstream ReconcilePro application may
+contain far more than just the SAP-sourced rows this engine is meant to
+match -- e.g. Oracle Fusion Receivables/Payables, spreadsheet imports,
+etc., all in the same `GL` sheet's `Source` column. Running the matcher
+against everything (instead of just `Source = SAP`) inflates the row
+count enormously (18,735 vs. the validated 451) and produces meaningless
+results. `--gl-filter-col`/`--gl-filter-value` (wired to `Source`/`SAP`
+by default in `run_sap.ps1`/`run_sap.sh`/`Run_SAP_Matching.bat`) filters
+the GL sheet down to the right population before matching -- so the raw,
+unfiltered export can be dropped in as-is with no manual pre-filtering
+in Excel required. The console prints how many rows were kept vs.
+skipped so a wrong filter value is obvious immediately.
+
 ## Workspace
 
 Drop raw source workbooks into `workspace/` (gitignored, along with every
