@@ -32,38 +32,78 @@ shortcut -- at real data volume (hundreds of GL lines), proving no exact
 combination exists is combinatorially expensive without it, and it
 doubles as a plausibility filter against coincidental amount matches.
 
-## Usage
+## Workspace
+
+Drop raw source workbooks into `workspace/` (gitignored, along with every
+`.xlsx`/`.xlsm` anywhere in the repo -- real financial data never gets
+committed no matter where you put it). `workspace/output/` is a reasonable
+place to let the pipeline write its results.
+
+## Quick start: run_sap.sh
+
+For the SAP GL/Bank export format (validated on the December 2025 data),
+`engine/run_sap.sh` chains matching + the Analysis tab in one command:
+
+```
+cd engine
+./run_sap.sh ../workspace/ReconcilePro_Matching_202512.xlsx SAP 2025-12 ../workspace/output
+```
+
+Produces `<name>_matched.xlsx` (matching engine only) and
+`<name>_matched_analysis.xlsx` (with the Analysis dashboard tab added) in
+the output directory. This is the SAP-specific defaults baked in --
+`Matching ID` as the primary code column, `Matching/Group ID` mirrored,
+`Match Status` flipped to `Matched`, 15-day date window, 10-item cap,
+2,000,000-entry search budget. For a different engine's export, call the
+two scripts directly (see below) with that export's own column/sheet
+names.
+
+## Usage (calling the scripts directly)
 
 ```
 cd engine
 python3 match_workbook.py \
   --input SAP_202512_Unmatched.xlsx \
   --output SAP_202512_Matched.xlsx \
-  --id-col "Matching/Group ID" \
+  --id-col "Matching ID" --secondary-id-col "Matching/Group ID" \
   --engine-col "Matched By Engine" --engine-tag Manual \
   --status-col "Match Status" --status-value Matched \
   --prefix SAP --period 2025-12 \
   --max-items 10 --date-window 15 --cap-entries 2000000
+
+python3 build_analysis_tab.py \
+  --input SAP_202512_Matched.xlsx \
+  --output SAP_202512_Matched_Analysis.xlsx \
+  --bank-sheet Bank --source-label SAP
 ```
 
-Key flags (all have defaults suited to the ReconcilePro export format --
-run `--help` for the full list):
+Key `match_workbook.py` flags (all have defaults suited to the
+ReconcilePro export format -- run `--help` for the full list):
 
 - `--gl-sheet` / `--bank-sheet`: tab names (default `GL` / `Bank`)
 - `--amount-col` / `--date-col`: source columns (default `Matching Amount`
   / `Transaction Date`)
-- `--id-col`: where the group code is written on both sides (varies by
-  export version -- `Match ID or Group ID` in one, `Matching/Group ID` in
-  another; check the actual column header)
-- `--prefix` / `--period`: group codes are `{prefix}-{period}-{seq:03d}`,
-  e.g. `SAP-2025-12-001`, sequential in Bank-row order so the sheet sorts
-  back into matched groups
+- `--id-col`: primary column the group code is written into on both sides
+  (varies by export version -- check the actual column header). Defaults
+  to `Matching ID`.
+- `--secondary-id-col`: optional second column to also receive the code,
+  e.g. `Matching/Group ID` on exports that carry both.
+- `--prefix` / `--period` / `--seq-digits`: group codes are
+  `{prefix}-{period}-{seq padded to seq-digits}`, e.g. `SAP-2025-12-01`
+  (default 2-digit padding), sequential in Bank-row order so the sheet
+  sorts back into matched groups. Bump `--seq-digits` if a run exceeds the
+  digit count's capacity (2 digits -> 99 matches) or padding will break
+  sort order past that count.
 - `--cap-entries`: how much search effort per target before giving up and
   marking it `search_incomplete` rather than a confirmed `Not allocated`.
   Real matches tend to require exploring deep into the search space, so
   lowering this trades away real matches for speed -- don't lower it just
   to make a test run finish faster; ~2,000,000 took about 12 minutes on
   451 GL x 636 Bank rows and is the validated setting.
+
+`build_analysis_tab.py` adds a KPI/story/chart "Analysis" dashboard tab
+computed live (via SUMIFS formulas) from a Bank-style sheet -- see
+`--help` for its flags.
 
 ## Repeating for other engines
 
