@@ -1,0 +1,82 @@
+Manual Matching Work Order #2
+
+This is a discussion and requirements of what a launching function for the Manual Matching project would look like.
+
+#1 It needs to find the source file:
+	The source file will be located in a folder that is segregated by date.
+	The main path will be:
+	C:\Users\swalk\Documents\ReconcilePro\operating_files\periods\2025-12\raw\Manual Matching\SAP_2025-12-MM.xlsx
+
+	The fixed path will be up to "periods". The system will need to figure out where the file is
+	based on the engine name and the date period.
+
+	Partial (fixed) path:
+	C:\Users\{current user}\Documents\ReconcilePro\operating_files\periods
+
+	The rest of the path and file name is derived from two dropdowns: Engine and Date Period.
+
+	Path formula:
+	{fixed path}\{YYYY-MM}\raw\Manual Matching\{Engine}_{YYYY-MM}-MM.xlsx
+
+	Example:
+	What engine are you using: Spreadsheet
+	What date period: 2025-09
+
+	The system then looks for this file:
+	C:\Users\{current user}\Documents\ReconcilePro\operating_files\periods\2025-09\raw\Manual Matching\Spreadsheet_2025-09-MM.xlsx
+
+	Engine dropdown values (confirmed):
+	- AutoCopy
+	- Oracle Cash
+	- Manual Journal
+	- Monthly Journal
+	- Spreadsheet
+	- Oracle Payables
+	- Oracle Receivables
+	- SAP
+
+	Path root assumption: each teammate's machine will have the same folder structure under
+	their own Windows user profile (C:\Users\{their username}\Documents\ReconcilePro\operating_files\periods\...).
+	This is handled as an admin/setup task (making sure every teammate's folder is laid out
+	consistently) rather than something the app needs to detect or configure per user. The app
+	derives the root from the logged-in user's own profile (%USERPROFILE%), so no path
+	configuration is needed in the app itself.
+
+#2 How do we execute the matching.
+	I am thinking that once we pull up the excel file that there will be a button that says Misc Matching.
+	At that point, you pick up the xlsx and complete the operation that you have built.
+
+#3 At that point, we should be able to use the human eye to manually match any of the items that are left through excel functions.
+
+#4 Now the question is, should we force the matching id to be the next one available? Or do we let the user create the next matching id?
+	Or, do we let them mark the row with a Y in a matching column and then hit a button to approve and have the system create the number?
+
+--------------------------------------------------------------------------------
+Decisions from discussion (launching aspect only — items #2-#4 above are still open
+for a future work order):
+
+1. Build standalone. This will not be bolted into the existing main application for v1.
+   A standalone tool is faster to iterate on, safer to hand to teammates for testing, and
+   can be folded into the main application later once the workflow is proven.
+
+2. Hand-off between teammates for manual matching is a manual, out-of-band process for v1
+   (copy the file, send it, copy it back). The app does not need to manage this.
+
+3. The app's job is scoped to: locate the file from the two dropdowns, and open it in Excel
+   (via the file's default association, e.g. os.startfile on Windows) — not to read/write the
+   xlsx directly. Excel remains the source of truth for the matching work itself.
+
+4. Tech stack: standalone Python desktop app (an existing Python environment is already used
+   for the team's main application, so Python is the natural choice here too).
+   - UI: Tkinter (ships with Python, no extra dependency to bundle) — two dropdowns
+     (Engine, Date Period) and a "Find & Open" button.
+   - Packaging: PyInstaller, built into a single .exe with an icon, so teammates can double-click
+     to launch without needing Python installed themselves.
+   - Behavior: build the path from the formula above; if the file exists, open it
+     (os.startfile); if not, show a clear "file not found at {path}" message.
+
+5. Each teammate is assumed to have the identical ReconcilePro folder structure under their
+   own Windows user profile. Ensuring this is a one-time admin/setup task, not something the
+   app needs to solve in code.
+
+From this, next step: build the v1 launcher (find + open) per the decisions above.
