@@ -39,6 +39,30 @@ Drop raw source workbooks into `workspace/` (gitignored, along with every
 committed no matter where you put it). `workspace/output/` is a reasonable
 place to let the pipeline write its results.
 
+## Double-click launcher (non-command-line use)
+
+`Run_SAP_Matching.bat` (project root) is meant to be run via a Desktop
+shortcut, no command line needed:
+
+1. Put exactly one raw export `.xlsx` directly in the project's top-level
+   folder (next to `Run_SAP_Matching.bat`, not inside `workspace/` or
+   `engine/`).
+2. Double-click the shortcut (or the `.bat` itself).
+3. Results land in `output/` (auto-created next to it) as `matched.xlsx`
+   and `matched_analysis.xlsx`. `output/` is disposable -- delete it and
+   re-run to reset and start clean.
+
+It auto-detects the processing period from the data itself (no need to
+edit the file each month) and auto-finds the one `.xlsx` sitting in the
+project folder -- if it finds none or more than one, it stops with a
+clear message rather than guessing. Uses the same validated SAP defaults
+as `run_sap.ps1`/`run_sap.sh`.
+
+A `.bat` file downloaded from the internet may be Windows-blocked the
+same way `.ps1` files are -- if double-clicking it does nothing or shows
+a security warning, run `Unblock-File -Path .\Run_SAP_Matching.bat` once
+in PowerShell.
+
 ## Quick start: run_sap.sh
 
 For the SAP GL/Bank export format (validated on the December 2025 data),
