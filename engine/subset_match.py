@@ -29,6 +29,7 @@ matches.
 All amounts are handled as integer cents to avoid floating point drift.
 """
 
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -93,7 +94,8 @@ def _feasible(pool: list, target_cents: int, max_items: int) -> bool:
 
 
 def match_all(gl_items: list, bank_items: list, max_items: int = 10,
-              date_window_days: int = 15, cap_entries: int = 2_000_000) -> dict:
+              date_window_days: int = 15, cap_entries: int = 2_000_000,
+              progress_every: int = 10) -> dict:
     """gl_items / bank_items: list of dicts with keys 'id', 'amount_cents',
     and 'date' (a datetime.date). Returns dict of bank_id -> MatchResult.
     """
@@ -126,6 +128,9 @@ def match_all(gl_items: list, bank_items: list, max_items: int = 10,
         else:
             still.append(b)
 
+    print(f"  Tier 1 (1:1): {len(ordered) - len(still)} matched, "
+          f"{len(still)} remain for many-to-one search", flush=True)
+
     # Tier 2: many-to-one, most-constrained target (fewest date-window
     # candidates) searched first; ties broken by (amount, date). Each
     # target gets one full DP build over its current candidate pool and
@@ -134,6 +139,9 @@ def match_all(gl_items: list, bank_items: list, max_items: int = 10,
         return (len(pool_for(b)), b["amount_cents"], b["date"])
 
     pending = still
+    total = len(pending)
+    done = 0
+    start = time.time()
     while pending:
         pending.sort(key=sort_key)
         b = pending.pop(0)
@@ -141,15 +149,23 @@ def match_all(gl_items: list, bank_items: list, max_items: int = 10,
         pool = pool_for(b)
         if not pool or not _feasible(pool, target_cents, max_items):
             results[b["id"]] = MatchResult(b["id"], "not_allocated")
-            continue
-        dp, complete = build_dp(pool, max_items, cap_entries)
-        combo = _lookup(dp, target_cents)
-        if combo is None:
-            status = "not_allocated" if complete else "search_incomplete"
-            results[b["id"]] = MatchResult(b["id"], status)
-            continue
-        for gid in combo:
-            del available[gid]
-        results[b["id"]] = MatchResult(b["id"], "exact_many", list(combo), target_cents)
+        else:
+            dp, complete = build_dp(pool, max_items, cap_entries)
+            combo = _lookup(dp, target_cents)
+            if combo is None:
+                status = "not_allocated" if complete else "search_incomplete"
+                results[b["id"]] = MatchResult(b["id"], status)
+            else:
+                for gid in combo:
+                    del available[gid]
+                results[b["id"]] = MatchResult(b["id"], "exact_many", list(combo), target_cents)
+
+        done += 1
+        if total and (done % progress_every == 0 or done == total):
+            elapsed = time.time() - start
+            rate = done / elapsed if elapsed > 0 else 0
+            remaining = (total - done) / rate if rate > 0 else 0
+            print(f"  Tier 2: {done}/{total} targets searched "
+                  f"({elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining)", flush=True)
 
     return results
