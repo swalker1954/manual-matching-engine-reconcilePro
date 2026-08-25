@@ -32,20 +32,26 @@ shortcut -- at real data volume (hundreds of GL lines), proving no exact
 combination exists is combinatorially expensive without it, and it
 doubles as a plausibility filter against coincidental amount matches.
 
-## Raw exports can mix multiple source systems
+## Raw exports can mix multiple source systems (SAP only)
 
-A raw GL export dropped by the upstream ReconcilePro application may
+SAP's raw GL export from the upstream ReconcilePro application used to
 contain far more than just the SAP-sourced rows this engine is meant to
 match -- e.g. Oracle Fusion Receivables/Payables, spreadsheet imports,
 etc., all in the same `GL` sheet's `Source` column. Running the matcher
-against everything (instead of just `Source = SAP`) inflates the row
-count enormously (18,735 vs. the validated 451) and produces meaningless
-results. `--gl-filter-col`/`--gl-filter-value` (wired to `Source`/`SAP`
-by default in `run_sap.ps1`/`run_sap.sh`/`Run_SAP_Matching.bat`) filters
-the GL sheet down to the right population before matching -- so the raw,
-unfiltered export can be dropped in as-is with no manual pre-filtering
-in Excel required. The console prints how many rows were kept vs.
-skipped so a wrong filter value is obvious immediately.
+against everything (instead of just `Source = SAP`) inflated the row
+count enormously (18,735 vs. the validated 451) and produced meaningless
+results. `--gl-filter-col`/`--gl-filter-value` filters the GL sheet down
+to the right population before matching -- so the raw, unfiltered export
+can be dropped in as-is with no manual pre-filtering in Excel required.
+The console prints how many rows were kept vs. skipped so a wrong filter
+value is obvious immediately.
+
+`Run_SAP_Matching.bat`/`run_sap.ps1`/`run_sap.sh` apply this filter only
+when the engine name is `SAP` (case-insensitive) -- other engines' raw
+exports are already single-engine by the time they land in the raw
+folder, so no filtering is needed for them. If a future engine's export
+turns out to mix systems the same way, call `match_workbook.py` directly
+with its own `--gl-filter-col`/`--gl-filter-value`.
 
 ## Workspace
 
@@ -56,37 +62,57 @@ place to let the pipeline write its results.
 
 ## Double-click launcher (non-command-line use)
 
-`Run_SAP_Matching.bat` (project root) is meant to be run via a Desktop
-shortcut, no command line needed. The engine code stays wherever this
-project folder lives; the DATA lives separately, organized by period, at
-a fixed external location (currently
+`Run_SAP_Matching.bat` (project root; the filename predates multi-engine
+support but the shortcut still points at it, so it's kept as-is -- feel
+free to rename the *shortcut's label* to something more generic) is meant
+to be run via a Desktop shortcut, no command line needed. The engine code
+stays wherever this project folder lives; the DATA lives separately,
+organized by period, at a fixed external location (currently
 `C:\users\swalk\documents\ReconcilePro\Operating_files\Periods\<period>\`
--- edit `DATA_ROOT` near the top of the `.bat` if this ever moves):
+-- edit `DATA_ROOT` near the top of the `.bat` if this ever moves).
+
+Every engine's raw export for a period sits side by side in the same
+folder, one file per engine, named `<Engine>_<period>_MM.xlsx`:
 
 ```
 Periods\<period>\raw\Manual Matching\
-  <raw export>.xlsx   <- input: exactly one .xlsx here
+  SAP_2025-12_MM.xlsx
+  Oracle_Cash_2025-12_MM.xlsx
+  Oracle_Payables_2025-12_MM.xlsx
+  ...
   output\              <- results land here (auto-created; safe to
                           delete to reset)
 ```
 
-1. Put exactly one raw export `.xlsx` in that period's `raw\Manual
-   Matching\` folder.
+1. Put each engine's raw export `.xlsx` in that period's `raw\Manual
+   Matching\` folder (one file per engine).
 2. Double-click the shortcut (or the `.bat` itself).
-3. It prompts for the period (e.g. type `2025-12` and press Enter) --
-   deliberate, not auto-picked, so an old unprocessed period folder can
-   never get silently skipped or the wrong month run by accident.
-4. A single result file lands in that period's `raw\Manual Matching\output\`,
+3. It prompts for the period (e.g. type `2025-12`) -- deliberate, not
+   auto-picked, so an old unprocessed period folder can never get
+   silently skipped or the wrong month run by accident.
+4. It then prompts for the engine name (e.g. type `SAP` or
+   `Oracle_Cash`) -- this must match the start of that engine's raw file
+   name. It finds the one `.xlsx` in the raw folder starting with
+   `<engine name>_`; if it finds none or more than one matching that
+   engine, it stops with a clear message rather than guessing.
+5. A single result file lands in that period's `raw\Manual Matching\output\`,
    named from the raw input file plus `_Matched` (e.g. `SAP_2025-12_MM.xlsx`
    -> `SAP_2025-12_MM_Matched.xlsx`), so the engine name and period are
    always encoded in the filename automatically. It opens in Excel (or
    whatever `.xlsx` is associated with) as soon as the run finishes.
 
+Run it once per engine per period -- each run only processes the one
+engine you name, and each engine's result file is independent, so
+running SAP doesn't touch Oracle_Cash's output and vice versa.
+
 It auto-detects the processing period *label used in match codes* from
-the data itself (no need to edit the file each month for that part) and
-auto-finds the one `.xlsx` sitting in the raw folder -- if it finds none
-or more than one, it stops with a clear message rather than guessing.
-Uses the same validated SAP defaults as `run_sap.ps1`/`run_sap.sh`.
+the data itself (no need to edit the file each month for that part).
+Uses the same column-name defaults as `run_sap.ps1`/`run_sap.sh`
+(`Matching Amount`, `Transaction Date`, `Matching ID`, etc.) -- these
+were validated against the SAP export; if another engine's export uses
+different sheet or column names, the direct-call form below (with its
+own `--gl-sheet`/`--bank-sheet`/column-name flags) is the fallback until
+the launcher is told about that engine's layout.
 
 A `.bat` file downloaded from the internet may be Windows-blocked the
 same way `.ps1` files are -- if double-clicking it does nothing or shows

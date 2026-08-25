@@ -36,11 +36,19 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($InputFile)
 $Final = Join-Path $OutDir "$($BaseName)_Matched.xlsx"
 
+# SAP's raw export used to mix multiple source systems in one sheet (an
+# upstream query issue) -- filter defensively for SAP only. Other engines'
+# raw exports are already single-engine, so no filter is applied for them.
+$FilterArgs = @()
+if ($Prefix.ToUpper() -eq "SAP") {
+    $FilterArgs = @("--gl-filter-col", "Source", "--gl-filter-value", "SAP")
+}
+
 Write-Host "=== Step 1/2: matching engine ===" -ForegroundColor Cyan
 python "$ScriptDir\match_workbook.py" `
   --input "$InputFile" `
   --output "$Final" `
-  --gl-filter-col "Source" --gl-filter-value "SAP" `
+  @FilterArgs `
   --id-col "Matching ID" `
   --secondary-id-col "Matching/Group ID" `
   --engine-col "Matched By Engine" `

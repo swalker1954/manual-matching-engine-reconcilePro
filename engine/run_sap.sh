@@ -33,11 +33,19 @@ FINAL="$OUTDIR/${BASENAME}_Matched.xlsx"
 
 mkdir -p "$OUTDIR"
 
+# SAP's raw export used to mix multiple source systems in one sheet (an
+# upstream query issue) -- filter defensively for SAP only. Other engines'
+# raw exports are already single-engine, so no filter is applied for them.
+FILTER_ARGS=()
+if [ "${PREFIX^^}" = "SAP" ]; then
+  FILTER_ARGS=(--gl-filter-col "Source" --gl-filter-value "SAP")
+fi
+
 echo "=== Step 1/2: matching engine ==="
 python3 "$SCRIPT_DIR/match_workbook.py" \
   --input "$INPUT" \
   --output "$FINAL" \
-  --gl-filter-col "Source" --gl-filter-value "SAP" \
+  "${FILTER_ARGS[@]}" \
   --id-col "Matching ID" \
   --secondary-id-col "Matching/Group ID" \
   --engine-col "Matched By Engine" \
