@@ -29,15 +29,14 @@ if [ ! -f "$INPUT" ]; then
 fi
 
 BASENAME="$(basename "$INPUT" .xlsx)"
-MATCHED="$OUTDIR/${BASENAME}_matched.xlsx"
-FINAL="$OUTDIR/${BASENAME}_matched_analysis.xlsx"
+FINAL="$OUTDIR/${BASENAME}_Matched.xlsx"
 
 mkdir -p "$OUTDIR"
 
 echo "=== Step 1/2: matching engine ==="
 python3 "$SCRIPT_DIR/match_workbook.py" \
   --input "$INPUT" \
-  --output "$MATCHED" \
+  --output "$FINAL" \
   --gl-filter-col "Source" --gl-filter-value "SAP" \
   --id-col "Matching ID" \
   --secondary-id-col "Matching/Group ID" \
@@ -51,7 +50,7 @@ python3 "$SCRIPT_DIR/match_workbook.py" \
 echo
 echo "=== Step 2/2: analysis tab ==="
 python3 "$SCRIPT_DIR/build_analysis_tab.py" \
-  --input "$MATCHED" \
+  --input "$FINAL" \
   --output "$FINAL" \
   --bank-sheet Bank --source-label "$PREFIX"
 

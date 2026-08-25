@@ -76,10 +76,11 @@ Periods\<period>\raw\Manual Matching\
 3. It prompts for the period (e.g. type `2025-12` and press Enter) --
    deliberate, not auto-picked, so an old unprocessed period folder can
    never get silently skipped or the wrong month run by accident.
-4. Results land in that period's `raw\Manual Matching\output\` as
-   `matched.xlsx` and `matched_analysis.xlsx`, and `matched_analysis.xlsx`
-   opens automatically in Excel (or whatever `.xlsx` is associated with)
-   when the run finishes.
+4. A single result file lands in that period's `raw\Manual Matching\output\`,
+   named from the raw input file plus `_Matched` (e.g. `SAP_2025-12_MM.xlsx`
+   -> `SAP_2025-12_MM_Matched.xlsx`), so the engine name and period are
+   always encoded in the filename automatically. It opens in Excel (or
+   whatever `.xlsx` is associated with) as soon as the run finishes.
 
 It auto-detects the processing period *label used in match codes* from
 the data itself (no need to edit the file each month for that part) and
@@ -102,9 +103,9 @@ cd engine
 ./run_sap.sh ../workspace/ReconcilePro_Matching_202512.xlsx SAP 2025-12 ../workspace/output
 ```
 
-Produces `<name>_matched.xlsx` (matching engine only) and
-`<name>_matched_analysis.xlsx` (with the Analysis dashboard tab added) in
-the output directory. This is the SAP-specific defaults baked in --
+Produces a single `<name>_Matched.xlsx` in the output directory (matching
+engine results plus the Analysis dashboard tab, in one file). This is the
+SAP-specific defaults baked in --
 `Matching ID` as the primary code column, `Matching/Group ID` mirrored,
 `Match Status` flipped to `Matched`, 15-day date window, 10-item cap,
 2,000,000-entry search budget. For a different engine's export, call the

@@ -34,13 +34,12 @@ New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($InputFile)
-$Matched = Join-Path $OutDir "$($BaseName)_matched.xlsx"
-$Final = Join-Path $OutDir "$($BaseName)_matched_analysis.xlsx"
+$Final = Join-Path $OutDir "$($BaseName)_Matched.xlsx"
 
 Write-Host "=== Step 1/2: matching engine ===" -ForegroundColor Cyan
 python "$ScriptDir\match_workbook.py" `
   --input "$InputFile" `
-  --output "$Matched" `
+  --output "$Final" `
   --gl-filter-col "Source" --gl-filter-value "SAP" `
   --id-col "Matching ID" `
   --secondary-id-col "Matching/Group ID" `
@@ -59,7 +58,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-Host "=== Step 2/2: analysis tab ===" -ForegroundColor Cyan
 python "$ScriptDir\build_analysis_tab.py" `
-  --input "$Matched" `
+  --input "$Final" `
   --output "$Final" `
   --bank-sheet Bank --source-label "$Prefix"
 

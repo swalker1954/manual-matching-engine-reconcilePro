@@ -86,6 +86,9 @@ if not "%COUNT%"=="1" (
 echo Using: %INPUT_FILE%
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
+for %%A in ("%INPUT_FILE%") do set "BASENAME=%%~nA"
+set "FINAL_FILE=%OUTPUT_DIR%\%BASENAME%_Matched.xlsx"
+
 echo.
 echo === Step 1/2: matching engine ===
 echo This takes roughly 10-15 minutes. The window will look idle - that
@@ -94,7 +97,7 @@ echo.
 
 python "%ENGINE_DIR%\match_workbook.py" ^
   --input "%INPUT_FILE%" ^
-  --output "%OUTPUT_DIR%\matched.xlsx" ^
+  --output "%FINAL_FILE%" ^
   --gl-filter-col "Source" --gl-filter-value "SAP" ^
   --id-col "Matching ID" ^
   --secondary-id-col "Matching/Group ID" ^
@@ -117,8 +120,8 @@ echo.
 echo === Step 2/2: analysis tab ===
 
 python "%ENGINE_DIR%\build_analysis_tab.py" ^
-  --input "%OUTPUT_DIR%\matched.xlsx" ^
-  --output "%OUTPUT_DIR%\matched_analysis.xlsx" ^
+  --input "%FINAL_FILE%" ^
+  --output "%FINAL_FILE%" ^
   --bank-sheet Bank --source-label SAP
 
 if errorlevel 1 (
@@ -132,10 +135,10 @@ if errorlevel 1 (
 echo.
 echo ============================================================
 echo  Done. Opening in Excel:
-echo    %OUTPUT_DIR%\matched_analysis.xlsx
+echo    %FINAL_FILE%
 echo ============================================================
 echo.
 
-start "" "%OUTPUT_DIR%\matched_analysis.xlsx"
+start "" "%FINAL_FILE%"
 
 pause
