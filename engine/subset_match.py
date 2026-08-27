@@ -29,6 +29,7 @@ matches.
 All amounts are handled as integer cents to avoid floating point drift.
 """
 
+import heapq
 import time
 from dataclasses import dataclass, field
 from typing import Optional
@@ -135,30 +136,73 @@ def match_all(gl_items: list, bank_items: list, max_items: int = 10,
     # candidates) searched first; ties broken by (amount, date). Each
     # target gets one full DP build over its current candidate pool and
     # takes the fewest-item combo it offers.
-    def sort_key(b):
-        return (len(pool_for(b)), b["amount_cents"], b["date"])
-
+    #
+    # A target's date-window candidate *ids* never change (GL dates are
+    # fixed) -- only how many of those ids are still available does. So
+    # each target's candidate id list is computed once, and its "still
+    # available" count is maintained incrementally (decremented only when
+    # a match consumes one of its candidates) instead of being rescanned
+    # from every pending target's full window on every iteration -- that
+    # rescan is what made this stage O(targets^2 x GL pool size) and
+    # unusable once the GL pool reaches real-world size (tens of
+    # thousands of rows for engines like Oracle Receivables, vs. the ~450
+    # rows this was originally tuned against).
+    #
+    # Priority order is still "true current global most-constrained
+    # first": a heap is kept in (count, amount, date, seq) order, and a
+    # stale entry (pushed before a later decrement) is detected and
+    # discarded at pop time rather than eagerly removed, since removing
+    # an arbitrary heap entry isn't cheap -- this is the standard
+    # lazy-deletion/decrease-key pattern and yields identical results to
+    # resorting from scratch every time.
     pending = still
     total = len(pending)
+    seq = {b["id"]: i for i, b in enumerate(pending)}
+    by_id = {b["id"]: b for b in pending}
+    window_ids = {}
+    gl_to_targets = {}
+    for b in pending:
+        ids = [gid for gid, _ in pool_for(b)]
+        window_ids[b["id"]] = ids
+        for gid in ids:
+            gl_to_targets.setdefault(gid, []).append(b["id"])
+
+    remaining_count = {bid: len(ids) for bid, ids in window_ids.items()}
+    heap = []
+    for b in pending:
+        bid = b["id"]
+        heapq.heappush(heap, (remaining_count[bid], b["amount_cents"], b["date"], seq[bid], bid))
+
     done = 0
     start = time.time()
-    while pending:
-        pending.sort(key=sort_key)
-        b = pending.pop(0)
+    finalized = set()
+    while len(finalized) < total:
+        count, _, _, _, bid = heapq.heappop(heap)
+        if bid in finalized or count != remaining_count[bid]:
+            continue  # already processed, or a fresher entry supersedes this one
+        finalized.add(bid)
+        b = by_id[bid]
         target_cents = b["amount_cents"]
-        pool = pool_for(b)
+        pool = [(gid, available[gid][0]) for gid in window_ids[bid] if gid in available]
         if not pool or not _feasible(pool, target_cents, max_items):
-            results[b["id"]] = MatchResult(b["id"], "not_allocated")
+            results[bid] = MatchResult(bid, "not_allocated")
         else:
             dp, complete = build_dp(pool, max_items, cap_entries)
             combo = _lookup(dp, target_cents)
             if combo is None:
                 status = "not_allocated" if complete else "search_incomplete"
-                results[b["id"]] = MatchResult(b["id"], status)
+                results[bid] = MatchResult(bid, status)
             else:
                 for gid in combo:
                     del available[gid]
-                results[b["id"]] = MatchResult(b["id"], "exact_many", list(combo), target_cents)
+                    for other_id in gl_to_targets.get(gid, ()):
+                        if other_id in finalized:
+                            continue
+                        remaining_count[other_id] -= 1
+                        other = by_id[other_id]
+                        heapq.heappush(heap, (remaining_count[other_id], other["amount_cents"],
+                                               other["date"], seq[other_id], other_id))
+                results[bid] = MatchResult(bid, "exact_many", list(combo), target_cents)
 
         done += 1
         if total and (done % progress_every == 0 or done == total):
