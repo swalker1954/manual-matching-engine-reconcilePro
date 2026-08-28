@@ -116,6 +116,12 @@ rem here, so no filter is applied for them.
 set "FILTER_ARGS="
 if /I "%ENGINE%"=="SAP" set "FILTER_ARGS=--gl-filter-col Source --gl-filter-value SAP"
 
+rem Oracle Receivables groups GL rows by Receipt Number (the GL tab's
+rem Reference column), sums each group, and matches that subtotal against
+rem a single Bank deposit -- no combinatorial search, unlike SAP.
+set "MATCH_MODE_ARGS="
+if /I "%ENGINE%"=="Oracle_Receivables" set "MATCH_MODE_ARGS=--match-mode receipt_group --group-col Reference"
+
 echo.
 echo === Step 1/2: matching engine ===
 echo This can take several minutes depending on the size of this engine's
@@ -127,6 +133,7 @@ python "%ENGINE_DIR%\match_workbook.py" ^
   --input "%INPUT_FILE%" ^
   --output "%FINAL_FILE%" ^
   %FILTER_ARGS% ^
+  %MATCH_MODE_ARGS% ^
   --id-col "Matching ID" ^
   --secondary-id-col "Matching/Group ID" ^
   --engine-col "Matched By Engine" ^

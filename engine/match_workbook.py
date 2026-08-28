@@ -24,10 +24,12 @@ import openpyxl
 from openpyxl.styles import Font
 
 from subset_match import match_all, to_cents, MatchResult
+from receipt_match import match_by_receipt
 
 STATUS_LABELS = {
     "exact_1to1": "Exact match (1:1)",
     "exact_many": "Exact match (many-to-one)",
+    "exact_receipt": "Exact match (receipt group)",
     "not_allocated": "Not allocated",
     "search_incomplete": "Search incomplete (pool too large)",
 }
@@ -42,14 +44,17 @@ def _as_date(value) -> date:
 
 
 def load_side(ws, amount_col: str, date_col: str, id_prefix: str,
-              filter_col: str = None, filter_value: str = None):
+              filter_col: str = None, filter_value: str = None, group_col: str = None):
     headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     idx = {h: i for i, h in enumerate(headers)}
     if amount_col not in idx:
         raise SystemExit(f"Column '{amount_col}' not found on sheet '{ws.title}'")
     if filter_col is not None and filter_col not in idx:
         raise SystemExit(f"Column '{filter_col}' not found on sheet '{ws.title}'")
+    if group_col is not None and group_col not in idx:
+        raise SystemExit(f"Column '{group_col}' not found on sheet '{ws.title}'")
     fcol = idx[filter_col] if filter_col is not None else None
+    gcol = idx[group_col] if group_col is not None else None
     items = []
     skipped_by_filter = 0
     for row_num, row in enumerate(
@@ -62,12 +67,15 @@ def load_side(ws, amount_col: str, date_col: str, id_prefix: str,
             skipped_by_filter += 1
             continue
         dt = row[idx[date_col]]
-        items.append({
+        item = {
             "id": f"{id_prefix}{row_num}",
             "row": row_num,
             "amount_cents": to_cents(amt),
             "date": _as_date(dt),
-        })
+        }
+        if gcol is not None:
+            item["group_key"] = row[gcol]
+        items.append(item)
     if fcol is not None:
         print(f"  {ws.title}: kept {len(items)} rows with {filter_col}='{filter_value}', "
               f"skipped {skipped_by_filter} others")
@@ -193,6 +201,16 @@ def main():
     ap.add_argument("--engine-tag", default="Manual")
     ap.add_argument("--status-col", default=None, help="e.g. 'Match Status'")
     ap.add_argument("--status-value", default="Matched")
+    ap.add_argument("--match-mode", default="subset_sum",
+                     choices=["subset_sum", "receipt_group"],
+                     help="'subset_sum' (default): combinatorial many-to-one search "
+                          "on amount + date window (SAP-style). 'receipt_group': sum "
+                          "GL rows sharing --group-col and match the subtotal to a "
+                          "single Bank row (Oracle Receivables-style) -- no search, "
+                          "no date window, no item-count limit.")
+    ap.add_argument("--group-col", default="Reference",
+                     help="GL column holding the grouping key (e.g. Receipt Number) "
+                          "for --match-mode receipt_group")
     ap.add_argument("--prefix", required=True, help="e.g. SAP")
     ap.add_argument("--period", default=None,
                      help="e.g. 2025-12. If omitted, auto-detected from the "
@@ -213,8 +231,10 @@ def main():
     gl_ws = wb[args.gl_sheet]
     bank_ws = wb[args.bank_sheet]
 
+    gl_group_col = args.group_col if args.match_mode == "receipt_group" else None
     gl_items, gl_idx = load_side(gl_ws, args.amount_col, args.date_col, "GL",
-                                  args.gl_filter_col, args.gl_filter_value)
+                                  args.gl_filter_col, args.gl_filter_value,
+                                  group_col=gl_group_col)
     bank_items, bank_idx = load_side(bank_ws, args.amount_col, args.date_col, "BK")
 
     period = args.period
@@ -238,8 +258,11 @@ def main():
 
     print(f"Loaded {len(gl_items)} GL rows, {len(bank_items)} Bank rows")
 
-    results = match_all(gl_items, bank_items, max_items=args.max_items,
-                         date_window_days=args.date_window, cap_entries=args.cap_entries)
+    if args.match_mode == "receipt_group":
+        results = match_by_receipt(gl_items, bank_items)
+    else:
+        results = match_all(gl_items, bank_items, max_items=args.max_items,
+                             date_window_days=args.date_window, cap_entries=args.cap_entries)
 
     matched_bank_rows = sorted(
         (b["row"] for b in bank_items if results[b["id"]].group_ids),
@@ -269,9 +292,11 @@ def main():
     build_report_tabs(wb, gl_items, bank_items, results, group_codes)
 
     exact = sum(1 for r in results.values() if r.group_ids)
+    n_1to1 = sum(1 for r in results.values() if r.status == 'exact_1to1')
+    n_many = sum(1 for r in results.values() if r.status == 'exact_many')
+    n_receipt = sum(1 for r in results.values() if r.status == 'exact_receipt')
     print(f"Matched {exact} of {len(bank_items)} Bank targets "
-          f"({sum(1 for r in results.values() if r.status == 'exact_1to1')} 1:1, "
-          f"{sum(1 for r in results.values() if r.status == 'exact_many')} many-to-one)")
+          f"({n_1to1} 1:1, {n_many} many-to-one, {n_receipt} receipt-group)")
 
     wb.save(args.output)
     print(f"Saved: {args.output}")

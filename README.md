@@ -32,6 +32,35 @@ shortcut -- at real data volume (hundreds of GL lines), proving no exact
 combination exists is combinatorially expensive without it, and it
 doubles as a plausibility filter against coincidental amount matches.
 
+## A second matching mode: receipt-group (Oracle Receivables)
+
+Not every engine needs the combinatorial search above. Oracle Receivables
+GL rows already carry a natural grouping key -- the Receipt Number, in the
+GL tab's `Reference` column -- so instead of searching for combinations,
+the engine sums each Receipt Number's GL rows and matches that subtotal,
+exact to the cent, against a single Bank deposit. This is a direct
+lookup, not a search: no item-count limit, no date-window restriction,
+and no "search incomplete" outcome -- a receipt group either finds its one
+matching Bank row or it doesn't.
+
+Enabled via `--match-mode receipt_group --group-col Reference` on
+`match_workbook.py`, or automatically by `Run_Manual_Matching.bat` when
+the engine name entered is `Oracle_Receivables`. GL rows with a blank
+Receipt Number are each treated as their own singleton group rather than
+being merged together (a blank isn't a real shared receipt). On a tie
+(more than one receipt group, or more than one Bank row, sharing the same
+amount), the earliest-date group is matched first -- the same tie-break
+rule used everywhere else in this engine. Matched rows get the same
+`{prefix}-{period}-{sequence}` code convention as every other engine
+(e.g. `Oracle_Receivables-2025-12-01`), reusing the existing write-back,
+Match Report/Match Inputs, and Analysis tab logic unchanged.
+
+Open questions not yet resolved with the business (see Work Order #3):
+whether a date-window plausibility check should still apply even though
+the Receipt Number is a definitive grouping key, and whether unmatched
+receipt groups need their own status label instead of reusing "Not
+allocated".
+
 ## Raw exports can mix multiple source systems (SAP only)
 
 SAP's raw GL export from the upstream ReconcilePro application used to
