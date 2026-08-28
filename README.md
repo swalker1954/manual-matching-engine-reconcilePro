@@ -46,7 +46,7 @@ can be dropped in as-is with no manual pre-filtering in Excel required.
 The console prints how many rows were kept vs. skipped so a wrong filter
 value is obvious immediately.
 
-`Run_SAP_Matching.bat`/`run_sap.ps1`/`run_sap.sh` apply this filter only
+`Run_Manual_Matching.bat`/`run_sap.ps1`/`run_sap.sh` apply this filter only
 when the engine name is `SAP` (case-insensitive) -- other engines' raw
 exports are already single-engine by the time they land in the raw
 folder, so no filtering is needed for them. If a future engine's export
@@ -62,10 +62,9 @@ place to let the pipeline write its results.
 
 ## Double-click launcher (non-command-line use)
 
-`Run_SAP_Matching.bat` (project root; the filename predates multi-engine
-support but the shortcut still points at it, so it's kept as-is -- feel
-free to rename the *shortcut's label* to something more generic) is meant
-to be run via a Desktop shortcut, no command line needed. The engine code
+`Run_Manual_Matching.bat` (project root; named for the tool, not any one
+engine, since it now runs all of them) is meant to be run via a Desktop
+shortcut, no command line needed. The engine code
 stays wherever this project folder lives; the DATA lives separately,
 organized by period, at a fixed external location (currently
 `C:\users\swalk\documents\ReconcilePro\Operating_files\Periods\<period>\`
@@ -116,7 +115,7 @@ the launcher is told about that engine's layout.
 
 A `.bat` file downloaded from the internet may be Windows-blocked the
 same way `.ps1` files are -- if double-clicking it does nothing or shows
-a security warning, run `Unblock-File -Path .\Run_SAP_Matching.bat` once
+a security warning, run `Unblock-File -Path .\Run_Manual_Matching.bat` once
 in PowerShell.
 
 ## Quick start: run_sap.sh
