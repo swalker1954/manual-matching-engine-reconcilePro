@@ -1,0 +1,425 @@
+# WO-0200 and WO-0201 — Review Copy
+
+Compiled 2026-09-24 for Project Owner review. Both work orders are copied
+verbatim from their sources. The only change is heading levels in WO-0201,
+shifted down one so both work orders sit at the same level.
+
+| WO | Title | Status | Source |
+|---|---|---|---|
+| WO-0200 | Bold Editorial Visual System Extended to Manual Matching, Utilities, Upload | Implemented and committed; not yet deployed | `swalker1954/ReconcilePro`, branch `cloud-foundation-wo-0145` (commit `35aa6ec`), `operating_files/work_orders/ACTIVE_WORK_ORDER.md` |
+| WO-0201 | Port WO-0160 PowerBI BankID Enrichment (and Its Engine Rules) to the Cloud Line | Draft — Blocked on WO-0160 | `swalker1954/manual-matching-engine-reconcilePro`, branch `claude/bold-volta-ejnpol` (commit `f854245`), `work_orders/WO-0201.md` |
+
+Note: WO-0201 is drafted in this repo, not yet filed in the cloud repo's
+`ACTIVE_WORK_ORDER.md`. WO-0200 is still the highest number used there, so
+`WO-0201` is still free.
+
+---
+
+## WO-0200 — Bold Editorial Visual System Extended to Manual Matching, Utilities, Upload
+
+**Current status:** Implemented and committed on `cloud-foundation-wo-0145`;
+not yet deployed. No schema change. First work order under the new
+cloud-line numbering convention (cloud now starts at WO-0200; see the
+Cross-Line Work Order Numbering Convention note at the top of this
+document).
+
+**Activation date:** September 2, 2026
+
+**Branch:** `cloud-foundation-wo-0145` (continues the same branch)
+
+**Branch base:** commit `b4ba1f1` (merged with `85cd846`, WO-0157's Bold
+Editorial restyle, which landed from a concurrent cloud session mid-way
+through this session's work)
+
+**Authorization:** Directly continues WO-0157's own recorded "exact next
+authorized action" -- extend the Bold Editorial visual system to the
+pages it explicitly did not touch, closing WO-0155's still-open "should
+Query and the Workbench match" question by making them match.
+
+**Scope:** Restyled three pages to reuse WO-0157's shared `CLOUD_FONT_LINKS`/
+`CLOUD_THEME_CSS`/`cloud_brand_html()` (cream/crimson/ink palette,
+Playfair Display headlines, IBM Plex Mono data, sharp corners, shared
+masthead) exactly as WO-0157 did for Control Center and Query -- reusing
+the same CSS custom-property names so only values change, no element id,
+class, script, or route touched:
+1. **Manual Matching Workbench** (`/cloud-batch/manual-matching`) --
+   full restyle: header masthead, query/filter/field-selection sections,
+   results tables, action buttons.
+2. **Cloud Utilities** (`/cloud-utilities`) -- header masthead, card
+   layout.
+3. **Cloud Storage upload-period page** (`/cloud-storage/upload-period`)
+   -- full restyle (this page previously had no styling at all, unlike
+   the other two which at least had a plain earlier pass); also fixed
+   two real staleness bugs found while restyling: its "Back" link and
+   post-upload redirect both still pointed at `/cloud-batch`, the
+   pre-WO-0153 batch-list page that is no longer the main flow -- both
+   now point at `/cloud-utilities` and `/` respectively.
+
+**Explicitly not restyled in this WO:** the batch list (`/cloud-batch`),
+batch detail (`/cloud-batch/detail`), and one-shot engine upload
+(`/cloud-engine`) pages remain plain/unstyled. Per WO-0153's own scope
+note, these are no longer part of the normal navigated flow (superseded
+by the Control Center dashboard and Utilities), kept only for direct-URL
+diagnostic use -- restyling them was judged lower priority than closing
+the gap on pages end users actually navigate through day to day. The
+legacy local-desktop pages (`render_control_center_html` and everything
+under Manual Workspace) are untouched, as always, since they serve the
+unauthenticated local app.
+
+**Verification:** Rendered all three pages directly (bypassing HTTP, via
+a monkeypatched handler) against real July 2025 data and linted the
+output with `html.parser` -- no markup errors on any of them, and all
+three confirmed to include the Bold Editorial theme (Playfair Display
+font reference present). `python3 -m pytest
+operating_files/tests/test_control_center_prototype.py`: same 120
+passed / 2 failed (pre-existing, platform-specific) / 1 skipped as every
+prior run this session -- no regression.
+
+**Progress:** Code complete, committed. The exact next authorized action
+is:
+
+`Project Owner redeploys reconcilepro-cc from this branch's latest
+commit (no schema change, same deploy flags as always), then on the live
+site confirms: Manual Matching Workbench, Cloud Utilities, and the
+upload-period page all show the same cream/crimson/ink look as Control
+Center and Query; the upload-period page's Back link and post-upload
+redirect land on Utilities and the Control Center respectively instead
+of the old batch-list page; and every existing interaction on all three
+pages (field selection, filters, Apply Query, Export Matching Workbook,
+reimport preview/apply, raw file upload) still works exactly as before.
+Then decide whether the remaining diagnostic-only pages (batch list/
+detail, one-shot engine upload) are worth restyling too, or should stay
+plain since they are intentionally not part of normal navigation.`
+
+
+---
+
+## WO-0201 — Port WO-0160 PowerBI BankID Enrichment (and Its Engine Rules) to the Cloud Line
+
+### Status
+
+`Draft — Blocked. Not authorized for implementation. Waiting on WO-0160
+(local-desktop line) to be completed, committed, pushed, and
+Project-Owner-verified before this work order's scope can be finalized or
+started.`
+
+This draft is refreshed each time the Project Owner supplies a newer copy of
+WO-0160's `ACTIVE_WORK_ORDER.md`. See **Revision log** at the end; the most
+recent source snapshot controls where it conflicts with earlier text.
+
+### Numbering note
+
+Written from a parallel Claude session (working local reconciliation/testing
+questions in `manual-matching-engine-reconcilePro`) at the Project Owner's
+request, to prepare the cloud-side "melding" work order in advance so it is
+ready to execute once WO-0160 lands — without pushing to the actively-worked
+`cloud-foundation-wo-0145` branch and risking a numbering collision the way
+WO-0157 did.
+
+Per `ACTIVE_WORK_ORDER.md`'s Cross-Line Work Order Numbering Convention
+(September 2, 2026), the cloud line runs WO-0200 and up, and multiple
+concurrent cloud sessions may be active. `WO-0200` was the highest used
+cloud number as of this draft (`35aa6ec`, "extend Bold Editorial visual
+system to Manual Matching, Utilities, Upload"). **Before this work order
+is filed or activated, whichever session actually starts it must re-check
+`ACTIVE_WORK_ORDER.md`'s highest used `WO-####` and renumber if `WO-0201`
+has since been taken by another concurrent cloud session.**
+
+### Purpose
+
+Port WO-0160's verified local behavior into the cloud line
+(`cloud_engine.py` / `database_schema_postgres.py` / cloud batch and Control
+Center code on `cloud-foundation-wo-0145`) so the cloud-hosted Control Center
+produces the same result as the local desktop — per the Project Owner's
+governance: the local desktop is the source of truth, and the two lines are
+melded one verified function at a time, not assumed to have parity.
+
+**Scope has grown since the first draft.** WO-0160 is no longer only
+"match a receipt and write back a bank designation." It now also changes
+engine candidate eligibility for every automated engine, Zero Clear
+behavior, the prior-period carryforward model, and several Matching
+Workbench behaviors. This work order must port all of that, or be split
+(see **Suggested split**).
+
+### WO-0160 state at last snapshot (2026-09-23)
+
+Local-only; nothing pushed. Branch `wo-0160-powerbi-bankid-enrichment` in
+worktree `C:\Users\swalk\Documents\ReconcilePro_Worktrees\WO-0160`, based on
+`cc1b4998b99e4ea048c8516af85190faaf384365` (committed tip of
+`manual-workspace-wo-0144`).
+
+| Checkpoint | Content | Local commit |
+|---|---|---|
+| C1 | PowerBI BankID enrichment Preview | `f5c652c117b7ff5097038c82140e8b6f84d2d6db` |
+| C2 | Apply, persistence, audit, full GL source-schema fidelity, Query/Workbench BankID visibility and filter | `0b64b3b2737a090cce8d87023728ca5b73803226` |
+| C3 | Receivables-only same-BankID Zero Clear (later superseded, see rule 5) | `b93ab68931ef022ebf361a1a6ade64aec170afea` |
+| C4 | Automatic prior-residual (carryforward) lifecycle; exact-CONS engine exclusion | `78318ee2bb6627199dd0adfd2c9e8e95a00fa6a1` |
+| C5 | Automatic BankID enrichment inside ordinary Data Prep | Owner-accepted 2026-09-12; local commit pending owner closeout script |
+
+Uncommitted after C5 (Sep 14–23): real-data July/August rehearsal fixes,
+receipt parser corrections, the Sep 15 scope correction, final exact-CONS
+rule, perpetual late manual matching, Workbench origin scope, Spreadsheet ICV
+SM exclusion, PowerBI panel summary/status, Control Center period-switch
+performance, and Hardening #1B, #1C, #1D and #2 (see below). The
+2026-09-22 local test-base milestone applies to the local line only.
+
+### Behavior to mirror (from WO-0160 `ACTIVE_WORK_ORDER.md`)
+
+These are recorded *behaviors*. The exact modules, function names, table
+names, and version strings must still be confirmed from WO-0160's actual
+diff before implementation.
+
+#### 1. BankID field
+
+- Name: `BankID` (case-sensitive), a **GL-only** field. Bank rows never
+  receive, carry, or map to a BankID. No BankID-to-Bank mapping exists.
+- Appended in the approved ReconcilePro field sequence **after** every raw
+  GL source column; it is not required to be the last column.
+- **Permanent full GL source-schema fidelity rule:** every raw GL source
+  column survives Data Prep in original order with its values (29 columns in
+  the current real export; must be dynamic for fewer/more). ReconcilePro
+  fields are appended and never replace, remove, rename, merge, or overwrite
+  source fields. Duplicate source headers and source/ReconcilePro name
+  collisions fail before import.
+- Stored BankID text is never rewritten, trimmed, or case-folded.
+
+#### 2. Receipt-key extraction and matching
+
+- GL key comes from Oracle Receivables `Action Number` (composite field).
+  Recognized structural forms:
+  - `Rct #: <Receipt>-<suffix…>` → receipt is the first component
+    (e.g. `Rct #: 05242713-1-emily.whitson` → `05242713`; the `-1` is
+    discarded, not concatenated);
+  - batch-first `Rct #: <PaymentBatchNum>-<ReceiptNumber>-…` → receipt is
+    the second component (malformed/ambiguous forms must not fall back to
+    the batch number);
+  - `Rct #: <ReceiptNumber>.lmg`;
+  - plain digit receipts.
+- PowerBI key is `ReceiptNumber`.
+- Leading zeros are stripped from validated digit-only keys on **both**
+  sides (supersedes the original "strip one leading 0 on the GL side" rule).
+  Blank/invalid/unparseable values never become a matchable empty or zero
+  key. Recognition must be structural — never chosen because a token happens
+  to match PowerBI, and no hard-coded months, receipts, batches, amounts, or
+  users.
+- Match: exact signed Decimal amount (GL `Net Amount` = PowerBI `Amount`),
+  one-to-one row use, with explicit ambiguity outcomes. Observed outcome
+  classes include `NO_RECEIPT_MATCH`, `AMOUNT_MISMATCH`,
+  `AMBIGUOUS_MULTIPLE_BANK_IDS`, `AMBIGUOUS_MULTIPLE_GL_CANDIDATES`,
+  `INVALID_GL_ROW`. Ambiguous or unmatched rows get no BankID (never guessed).
+- The receipt-normalization rule is **versioned** and part of the Preview
+  fingerprint (last known published versions:
+  `DIGIT-LEADING-ZERO-CANONICAL-1` →
+  `GL-RCT-EXTRACT-DIGIT-ZERO-CANONICAL-1` → a newer version for the
+  batch-first/`.lmg` parser, name to be confirmed). A rule change must
+  invalidate earlier Preview evidence.
+
+#### 3. Enrichment workflow
+
+- Preview (non-mutating, fingerprinted, three-sheet review workbook
+  `Matched` / `Exceptions` / `Unused PowerBI`) → separate non-mutating
+  confirmation page → confirmed Apply with server token and exact phrase;
+  idempotent; authoritative JSON manifest is the Apply input (the Excel
+  review workbook is never an Apply input).
+- Since C5, a successful ordinary **Run Data Prep** performs: preparation →
+  automatic prior-residual population → automatic BankID Preview/Apply.
+  Manual Preview/Apply remain available separately. Repeating Data Prep on
+  unchanged inputs returns `409 DATA_PREP_INPUTS_UNCHANGED`.
+- Current vs. carryforward assignments are tracked separately. A
+  late-arriving PowerBI match for a prior-period row is applied only in the
+  later period (`LATE_ARRIVING_POWERBI_MATCH` overlay); the original period
+  is **never backdated**.
+- Control Center PowerBI panel is summary-only (aggregate counts, BankID
+  counts, Current-vs-Carryforward counts, fingerprint); row-level detail is
+  on the separate results route.
+
+#### 4. BankID-driven engine eligibility
+
+- **Exact `CONS`** (literal, unnormalized) is **manual-match only**:
+  excluded at the automated GL-candidate boundary of every engine (SAP,
+  AutoCopy, Manual Journal, Monthly Journal, Spreadsheet, Oracle Cash,
+  Oracle Payables, Oracle Receivables) and from Zero Clear. It remains in
+  Data Prep, history, carryforward, Query Data, and Matching Workbench.
+  (The 2026-09-22 Receivables CONS exception was reversed the same day.)
+- **Oracle Receivables automatic matching** accepts only exact `OP`,
+  `BANK1 OP`, and `DEPAM`. No trimming or case-folding; `op`, `OP `, blank,
+  and all other values are excluded. `OP`/`BANK1 OP` equivalence applies
+  only where an OP-eligibility rule applies.
+- No other new global restrictions (blank BankID, non-Receivables sources,
+  differing non-CONS BankIDs) unless an engine already had them. Bank
+  candidate populations and all existing engine matching criteria are
+  otherwise unchanged. Owner's 2026-09-15 scope statement: "match bank ids
+  and then exclude CONS from processing for each of the engines ... nothing
+  else."
+
+#### 5. Zero Clear
+
+- Baseline pre-WO-0160 behavior: exact signed-cent GL pair matching, 7-day
+  date compatibility, deterministic pair ordering, on the ordinarily
+  available GL population **after exact-CONS exclusion**.
+- C3's Receivables-only / same-BankID partition and multirow search are
+  **superseded** (2026-09-15) and must not be ported as the controlling
+  behavior.
+
+#### 6. Automatic prior-residual (carryforward) model
+
+- Carryforward is the ordinarily available closing residual of the
+  immediately preceding period — not an operator process or accounting
+  event. BankID has no bearing on carryforward eligibility. The manual
+  Preview/Apply carryforward flow is retired (`CARRYFORWARD_IS_AUTOMATIC`).
+- Backed by refresh / participation-header / participation-version /
+  supersession / immutable-lifecycle records for deterministic projection,
+  audit, idempotency, and duplicate prevention.
+- A shared post-commit service (Hardening #2) runs after Data Prep
+  create/rebuild, engine completion/reset, Zero Clear Apply/Reset, PowerBI
+  Apply, Manual Workspace changes, and authorized close/reopen: it marks the
+  current target plus every contiguous initialized later period STALE
+  atomically, then refreshes each once, in order. Matching Workbench import
+  uses an in-transaction variant (sync failure rolls the import back).
+  Failures leave targets visibly `ERROR`/`STALE`, never falsely `CURRENT`.
+- Source evidence is dependency-scoped, not database-wide; unrelated later
+  activity must not invalidate an older target.
+
+#### 7. Matching Workbench / Query
+
+- BankID visible in Query Data, Workbench, and exports; Workbench pre-query
+  exact BankID filter (`All`, `Blank / Unassigned`, exact values), applied to
+  GL only.
+- Current/Prior scope derives only from each row's authoritative
+  `source_period`.
+- **Perpetual late manual matching:** a still-unmatched identity may be
+  manually matched in its earlier period even if it has participated in
+  later periods; Confirm refreshes all affected later periods in the same
+  transaction.
+
+#### 8. Engine-specific changes also on the WO-0160 branch
+
+- Spreadsheet (tester-validation override, 2026-09-17/20): `Spreadsheet ICV
+  SM <journal>` lines (zero or more spaces after `SM`, case-insensitive,
+  not `SMART`/`SMITH`) excluded from Pass 2 Bank matching; Pass 3 and Pass 4
+  disabled. **Confirm with the Project Owner whether this is permanent
+  before porting.**
+- Empty-counterpart (`allow_empty_counterpart=True`) at proven prior-period
+  paths for all eight engines.
+
+### Naming collision to resolve before implementation
+
+`cloud_engine.py` already has a `Bank_ID` field — a pre-existing, unrelated
+row identifier produced by Data Prep. WO-0160's field is `BankID`. The two
+differ only by an underscore, which is too easy to confuse in code and
+exports. Resolve explicitly at implementation time (for example, keep
+`BankID` to match local exports and rename or clearly comment the cloud's
+`Bank_ID`), and record the decision in `docs/ARCHITECTURE_DECISIONS.md`.
+
+### Known divergences between the lines
+
+- **Carryforward model.** The cloud line's WO-0156 SAP prior-period
+  carryforward predates WO-0160's automatic participation/lifecycle model.
+  These must be reconciled; mirroring the local model is expected, per
+  source-of-truth governance.
+- **Engine logic is no longer "unchanged".** The first draft assumed the
+  cloud could call unmodified `reconciliation_engine.*` functions. WO-0160
+  changes candidate boundaries in all eight engines and in Zero Clear, so
+  the cloud must pick up those modified modules.
+- **Schema.** The first draft expected no Postgres migration. That is
+  unlikely to hold: enrichment runs, assignments, manifests/fingerprints,
+  audit, and participation/version/lifecycle records are new persistent
+  structures, not just an extra JSON field. Confirm from the WO-0160 diff.
+- **Volume.** The real July data had ~933k PowerBI rows and ~50k exception
+  GL rows; the local August SQLite database is ~1.2 GB. The cloud upload
+  path (size limits), Postgres query plans, and request timeouts on Cloud
+  Run need explicit handling. Hardening #1B–#1D show the local line already
+  hit performance limits at this scale.
+
+### Prerequisites (all required before this work order may start)
+
+1. WO-0160 complete, committed, and **pushed** (with Project Owner
+   authorization) to a reachable branch, including the C5 commit and all
+   post-C5 work that the Project Owner accepts.
+2. WO-0160 Project-Owner-verified locally, including the real-data
+   rehearsal the Owner designates as the reference.
+3. From WO-0160's actual diff, confirm:
+   - modules/functions for receipt parsing, enrichment Preview/Apply,
+     automatic Data Prep invocation, exact-CONS/OP eligibility helpers, and
+     the automatic-Prior post-commit service;
+   - new tables/columns and the current receipt-normalization version;
+   - which post-C5 items are permanent vs. tester-only (e.g. Spreadsheet
+     Pass 3/4 disabled).
+4. A reference dataset (GL, Bank, PowerBI for at least two consecutive
+   periods) and the matching local outputs, for side-by-side comparison.
+
+### Suggested split (for decision when activated)
+
+- **WO-0201a** — PowerBI upload + BankID enrichment (rules 1–3), Query and
+  Workbench visibility/filter.
+- **WO-0201b** — BankID-driven engine eligibility and baseline Zero Clear
+  with CONS exclusion (rules 4–5, 8).
+- **WO-0201c** — Automatic prior-residual lifecycle and perpetual late
+  manual matching (rules 6–7), reconciled against cloud WO-0156.
+
+Each part is verified side by side against local output before the next
+starts.
+
+### Scope (tentative — firm up once Prerequisites are satisfied)
+
+1. Add the PowerBI export as a third upload on the existing "Upload Raw Files
+   for a Period" screen (one more file field, one button — satisfies
+   ADR-001's operator-burden condition), scoped per organization, with size
+   handling for full monthly exports.
+2. Port WO-0160's enrichment, eligibility, Zero Clear, and carryforward
+   logic by reusing the WO-0160 modules as-is where possible, rather than
+   reimplementing rules.
+3. Add the Postgres structures WO-0160 requires, each with
+   `organization_id`.
+4. Surface BankID and the summary-only enrichment panel in cloud Control
+   Center, Query, and Matching Workbench, following the WO-0200-series UI
+   conventions (that line owns visual design).
+
+### Explicitly out of scope
+
+- Designing or changing any matching rule. This work order ports verified
+  local behavior only.
+- Any rule the Project Owner has not yet accepted on the local line.
+- Detailed CONS accounting/adjustment design (still pending on the local
+  line).
+- UI/visual design decisions beyond wiring (WO-0200 series owns them).
+
+### Open questions to resolve at execution time
+
+- Final receipt-normalization version name and whether more Action Number
+  forms were added after 2026-09-23.
+- Are the Spreadsheet Pass 3/4 disablement and ICV SM exclusion permanent?
+- Is the PowerBI export a full monthly file or a pre-filtered extract? What
+  upload size limit does the cloud path need?
+- How to migrate or reinitialize any cloud periods already processed under
+  WO-0156 carryforward.
+- Is a real-data comparison allowed in the cloud, or synthetic data only?
+
+### Acceptance criteria
+
+- For the same GL, Bank, and PowerBI inputs across at least two consecutive
+  periods, the cloud produces the same results as local: BankID assignments
+  and outcome classes, engine matches (with CONS excluded and Receivables
+  limited to OP/BANK1 OP/DEPAM), Zero Clear groups, and Current/Prior
+  availability counts. Verified side by side, not by code review alone.
+- Every raw GL source column survives in order in cloud Data Prep, Query,
+  and export.
+- No regression in existing cloud engine behavior, except the WO-0160 rule
+  changes listed above.
+
+### Revision log
+
+- **2026-09-09** — First draft (`628cfe5`), based on the manual walkthrough
+  of the receipt → BankID behavior only.
+- **2026-09-23** — Refreshed from the Project Owner's WO-0160
+  `ACTIVE_WORK_ORDER.md` snapshot dated through Hardening #2 (2026-09-23).
+  Added: C1–C5 state and commits; full receipt parser, both-sided
+  leading-zero rule, and versioning; automatic enrichment in Data Prep;
+  exact-CONS exclusion across all engines and Zero Clear; Receivables
+  OP/BANK1 OP/DEPAM eligibility; Zero Clear reverted to baseline pairs;
+  automatic prior-residual model and Hardening #2 post-commit refresh;
+  Workbench origin scope and perpetual late manual matching; Spreadsheet ICV
+  SM override; corrected field name `BankID`; retracted the "unchanged
+  engines" and "no schema migration" assumptions; volume notes; suggested
+  split. The companion Word plan in `deliverables/` reflects the first draft
+  only and has not been regenerated.
